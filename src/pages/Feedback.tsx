@@ -60,9 +60,7 @@ const FeedbackPage: React.FC = () => {
     setFeedbacks(initialFeedbacks);
     setIsLoading(false);
 
-    // This is just a placeholder - use environment variables or secure key management
-    // setApiKey('AIzaSyDoLCgKy2fjjs3f3aZNTkfSiQ6Ap8PibWM');
-    setApiKey("AIzaSyDj6yzjeGEL0VZJNuFbfQ48zrXcu4vAXLA");
+    setApiKey(import.meta.env.VITE_GEMINI_API_KEY);
   }, [state, navigate]);
 
   const handleFeedbackReceived =

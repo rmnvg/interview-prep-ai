@@ -56,7 +56,8 @@ async function getGeminiQuestions(
   resume: string
 ): Promise<{ questions: string[] }> {
   const model = "gemini-2.0-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=AIzaSyDoLCgKy2fjjs3f3aZNTkfSiQ6Ap8PibWM`;
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const prompt = `Job Description: ${Jd}
   Candidate Resume: ${resume}
