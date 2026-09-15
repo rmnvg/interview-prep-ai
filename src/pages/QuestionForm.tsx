@@ -36,16 +36,6 @@ interface DetectionResults {
 }
 
 //#region questions generated using gemini
-interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string;
-      }>;
-    };
-  }>;
-}
-
 interface AIResponse {
   questions: { question: string }[];
 }
@@ -55,10 +45,6 @@ async function getGeminiQuestions(
   Jd: string,
   resume: string
 ): Promise<{ questions: string[] }> {
-  const model = "gemini-2.0-flash";
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
   const prompt = `Job Description: ${Jd}
   Candidate Resume: ${resume}
   Generate 3 targeted interview questions based on the content of the jd and resume variables, following these criteria:
@@ -79,44 +65,22 @@ Format your response as a JSON object with the following structure:
 }
 `;
 
-  const requestBody = {
-    contents: [
-      {
-        parts: [
-          {
-            text: prompt,
-          },
-        ],
-      },
-    ],
-  };
-
   try {
-    const response = await fetch(url, {
+    const response = await fetch("/api/gemini", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({ prompt }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.error && errorData.error.message) {
-          errorMessage += `: ${errorData.error.message}`;
-        }
-      } catch (parseError) {
-        console.error("Error parsing error response", parseError);
-      }
-      throw new Error(errorMessage);
+      throw new Error(data?.error || `HTTP error! status: ${response.status}`);
     }
 
-    const data: GeminiResponse = await response.json();
-    const responseText = data.candidates[0].content.parts[0].text;
-
-    const parsedResult: AIResponse = cleanJsonResponse(responseText);
+    const parsedResult: AIResponse = cleanJsonResponse(data.text);
     console.log(parsedResult);
 
     const qns = parsedResult.questions.map((item) => item.question);

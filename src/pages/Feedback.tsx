@@ -33,7 +33,6 @@ const FeedbackPage: React.FC = () => {
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [overallScore, setOverallScore] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [apiKey, setApiKey] = useState<string>(""); // Add API key state
   const multiface = state?.cheating.multipleFaces;
   const lookaway = state?.cheating.lookingAway;
   const device = state?.cheating.usingDevice;
@@ -59,8 +58,6 @@ const FeedbackPage: React.FC = () => {
 
     setFeedbacks(initialFeedbacks);
     setIsLoading(false);
-
-    setApiKey(import.meta.env.VITE_GEMINI_API_KEY);
   }, [state, navigate]);
 
   const handleFeedbackReceived =
@@ -138,11 +135,10 @@ const FeedbackPage: React.FC = () => {
                 </div>
 
                 {/* Conditionally render FeedbackComponent if loading */}
-                {feedback.loading && apiKey && (
+                {feedback.loading && (
                   <FeedbackComponent
                     question={feedback.question}
                     answer={feedback.answer}
-                    apiKey={apiKey}
                     onFeedbackReceived={handleFeedbackReceived(index)}
                   />
                 )}

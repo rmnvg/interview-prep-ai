@@ -3,21 +3,10 @@ import React, { useState, useEffect } from "react";
 interface FeedbackComponentProps {
   question: string;
   answer: string;
-  apiKey: string;
   onFeedbackReceived: (feedback: {
     rating: number;
     feedbackText: string;
   }) => void;
-}
-
-interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string;
-      }>;
-    };
-  }>;
 }
 
 interface AIResponse {
@@ -36,13 +25,9 @@ const cleanJsonResponse = (responseText: string) => {
 
 async function getGeminiFeedback(
   question: string,
-  answer: string,
-  apiKey: string
+  answer: string
 ): Promise<{ rating: number; feedbackText: string }> {
-  const model = "gemini-2.0-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const prompt = 
+  const prompt =
   `Question: ${question}
   User Answer: ${answer}
   Please compare the user's answer to the ideal response and provide a rating (1-10). If the answer is relevant, rate the response based on accuracy, depth, and clarity. If the answer is irrelevant, rate it as 1 and include feedback: "Answer is not relevant."
@@ -56,44 +41,22 @@ async function getGeminiFeedback(
     "feedback": "The answer is mostly correct, but it could use more detail about X."
   }`;
 
-  const requestBody = {
-    contents: [
-      {
-        parts: [
-          {
-            text: prompt,
-          },
-        ],
-      },
-    ],
-  };
-
   try {
-    const response = await fetch(url, {
+    const response = await fetch("/api/gemini", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({ prompt }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.error && errorData.error.message) {
-          errorMessage += `: ${errorData.error.message}`;
-        }
-      } catch (parseError) {
-        console.error("Error parsing error response", parseError);
-      }
-      throw new Error(errorMessage);
+      throw new Error(data?.error || `HTTP error! status: ${response.status}`);
     }
 
-    const data: GeminiResponse = await response.json();
-    const responseText = data.candidates[0].content.parts[0].text;
-
-    const parsedResult: AIResponse = cleanJsonResponse(responseText);
+    const parsedResult: AIResponse = cleanJsonResponse(data.text);
 
     const rating = parsedResult ? parsedResult.ratings : 1;
     const feedbackText = parsedResult
@@ -115,7 +78,6 @@ async function getGeminiFeedback(
 const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
   question,
   answer,
-  apiKey,
   onFeedbackReceived,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -126,8 +88,7 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
       try {
         const { rating, feedbackText } = await getGeminiFeedback(
           question,
-          answer,
-          apiKey
+          answer
         );
         onFeedbackReceived({ rating, feedbackText });
       } catch (error) {
@@ -143,7 +104,7 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
     };
 
     fetchFeedback();
-  }, [question, answer, apiKey, onFeedbackReceived]);
+  }, [question, answer, onFeedbackReceived]);
 
   return (
     <div className="text-center">
